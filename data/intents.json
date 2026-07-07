@@ -1,0 +1,110 @@
+[
+  {
+    "intent": "weather_song",
+    "examples": [
+      "recommend music for this weather",
+      "suggest a song based on the weather",
+      "what should I listen to today",
+      "song for a rainy day",
+      "music for cloudy weather",
+      "play something for this hot afternoon",
+      "what song fits the cold outside",
+      "give me a weather based song",
+      "song for sunny weather",
+      "music that matches today's weather",
+      "suggest something for this rainy evening",
+      "what song goes with the climate"
+    ]
+  },
+  {
+    "intent": "sad_song",
+    "examples": [
+      "I am feeling sad",
+      "suggest a sad song",
+      "I feel low today",
+      "music for heartbreak",
+      "play something emotional",
+      "I miss someone",
+      "give me a crying song",
+      "I feel lonely",
+      "something deep and emotional",
+      "song for a bad day",
+      "music for when I am upset"
+    ]
+  },
+  {
+    "intent": "party_song",
+    "examples": [
+      "party music",
+      "suggest a dance song",
+      "play something energetic",
+      "music for a party",
+      "give me upbeat music",
+      "I want a hype song",
+      "song for dancing",
+      "club music please",
+      "music for friends tonight",
+      "play something fun and loud"
+    ]
+  },
+  {
+    "intent": "focus_song",
+    "examples": [
+      "music for studying",
+      "focus music",
+      "song for coding",
+      "I need concentration music",
+      "play calm instrumental music",
+      "music for deep work",
+      "song for reading",
+      "I need to focus",
+      "study playlist",
+      "productive background music",
+      "music while working"
+    ]
+  },
+  {
+    "intent": "romantic_song",
+    "examples": [
+      "suggest a romantic song",
+      "love song please",
+      "music for a date",
+      "play something romantic",
+      "song for my crush",
+      "music for valentine",
+      "a sweet love track",
+      "song for candle light dinner",
+      "romantic rainy song",
+      "soft love music"
+    ]
+  },
+  {
+    "intent": "workout_song",
+    "examples": [
+      "workout music",
+      "gym song",
+      "music for running",
+      "play something powerful",
+      "song for exercise",
+      "give me training music",
+      "high energy workout track",
+      "music for jogging",
+      "something to pump me up"
+    ]
+  },
+  {
+    "intent": "calm_song",
+    "examples": [
+      "I want something chill",
+      "relaxing song",
+      "calm music please",
+      "peaceful music",
+      "soft background music",
+      "music to relax",
+      "play something soothing",
+      "quiet and calm songs",
+      "stress relief music",
+      "music for meditation"
+    ]
+  }
+]

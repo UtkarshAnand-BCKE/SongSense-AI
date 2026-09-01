@@ -1,5 +1,4 @@
 const { fetchWithRetry } = require("./fetchWithRetry");
-const axios = require("axios");
 
 const WEATHER_CODES = {
   0: ["clear", "Clear sky"],

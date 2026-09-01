@@ -9,15 +9,17 @@ const locationText   = document.getElementById('locationText');
 const statusMsg      = document.getElementById('statusMsg');
 
 const nowPlayingCard   = document.getElementById('nowPlayingCard');
-const npEmpty          = nowPlayingCard.querySelector('.np-empty');
-const npLoaded         = nowPlayingCard.querySelector('.np-loaded');
-const songTitle        = document.getElementById('songTitle');
-const songArtist       = document.getElementById('songArtist');
-const intentTag        = document.getElementById('intentTag');
-const moodTag          = document.getElementById('moodTag');
-const waveform         = nowPlayingCard.querySelector('.waveform');
-const spotifyLink      = document.getElementById('spotifyLink');
-const spotifySearchBtn = document.getElementById('spotifySearchBtn');
+const npEmpty            = nowPlayingCard.querySelector('.np-empty');
+const npLoaded            = nowPlayingCard.querySelector('.np-loaded');
+const songTitle         = document.getElementById('songTitle');
+const songArtist        = document.getElementById('songArtist');
+const intentTag         = document.getElementById('intentTag');
+const moodTag            = document.getElementById('moodTag');
+const waveform            = nowPlayingCard.querySelector('.waveform');
+const transportControls  = nowPlayingCard.querySelector('.transport');
+const spotifyLink       = document.getElementById('spotifyLink');
+const spotifySearchBtn  = document.getElementById('spotifySearchBtn');
+const mediaWrap           = document.getElementById('spotifyEmbedWrap');
 
 const weatherCard = document.getElementById('weatherCard');
 const wcEmpty     = weatherCard.querySelector('.wc-empty');
@@ -117,24 +119,50 @@ recommendBtn.addEventListener('click', async () => {
 });
 
 function renderResult(data) {
-  const { song, intent, weather } = data;
+  const { song, intent, weather, media } = data;
 
   songTitle.textContent  = song.title;
   songArtist.textContent = song.artist;
   intentTag.textContent  = formatIntent(intent);
   moodTag.textContent    = song.mood?.[0] ?? 'mixed';
 
-  const query = encodeURIComponent(`${song.title} ${song.artist}`);
-  const spotifyUrl = `https://open.spotify.com/search/${query}`;
-  spotifyLink.href = spotifyUrl;
-  spotifySearchBtn.onclick = () => window.open(spotifyUrl, '_blank');
+  const fallbackUrl = `https://open.spotify.com/search/${encodeURIComponent(`${song.title} ${song.artist}`)}`;
+  const openUrl = media?.watchUrl || fallbackUrl;
+  spotifyLink.href = openUrl;
+  spotifyLink.textContent = media?.watchUrl ? 'Open on YouTube' : 'Open in Spotify';
+  spotifySearchBtn.onclick = () => window.open(openUrl, '_blank');
 
   npEmpty.hidden = true;
   npLoaded.hidden = false;
   nowPlayingCard.classList.remove('state-empty');
   nowPlayingCard.classList.add('state-loaded', 'fade-in');
-  waveform.classList.remove('paused');
-  isPlaying = true;
+
+  if (media?.embedUrl) {
+    // Real playback: swap the fake waveform/transport controls for an
+    // embedded YouTube player streaming the actual track.
+    waveform.hidden = true;
+    transportControls.hidden = true;
+    mediaWrap.hidden = false;
+    mediaWrap.innerHTML = `
+      <iframe
+        width="100%"
+        height="200"
+        src="${media.embedUrl}"
+        title="${media.videoTitle || song.title}"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>`;
+  } else {
+    // No match found (or API key not configured) — fall back to the
+    // decorative waveform plus a link out to search for the track.
+    mediaWrap.hidden = true;
+    mediaWrap.innerHTML = '';
+    waveform.hidden = false;
+    transportControls.hidden = false;
+    waveform.classList.remove('paused');
+    isPlaying = true;
+  }
 
   if (weather) {
     weatherIcon.textContent = conditionEmoji(weather.condition);
@@ -148,7 +176,8 @@ function renderResult(data) {
   }
 }
 
-// Play/pause
+// Play/pause (only used for the decorative fallback state, when there's
+// no real embed to control)
 const playBtn = nowPlayingCard.querySelector('.transport-play');
 playBtn.addEventListener('click', () => {
   isPlaying = !isPlaying;

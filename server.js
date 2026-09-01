@@ -1,12 +1,21 @@
+require("dotenv").config();
+
+// Some Windows/VPN setups resolve IPv6 first and time out before falling
+// back to IPv4. Forcing IPv4 first avoids the ConnectTimeoutError some
+// users hit when calling external APIs.
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 const express = require("express");
 const path = require("path");
 
 const { classifyIntent } = require("./services/intentClassifier");
 const { recommendSongs } = require("./services/songRecommender");
 const { getWeather, geocodeCity } = require("./services/weatherService");
+const { findTrack } = require("./services/youtubeService");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -43,11 +52,19 @@ app.post("/api/recommend", async (req, res) => {
       coordinates: { latitude, longitude }
     });
 
+    // Look up a real, playable YouTube video for the top recommendation.
+    // Falls back to null if no match or if the API key isn't configured.
+    let media = null;
+    if (recommendation.primary) {
+      media = await findTrack(recommendation.primary.title, recommendation.primary.artist);
+    }
+
     res.json({
       intent: prediction.intent,
       weather,
       song: recommendation.primary,
-      playlist: recommendation.playlist
+      playlist: recommendation.playlist,
+      media
     });
   } catch (err) {
     console.error(err);

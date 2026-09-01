@@ -1,3 +1,5 @@
+const { fetchWithRetry } = require("./fetchWithRetry");
+
 const WEATHER_CODES = {
   0: ["clear", "Clear sky"],
   1: ["clear", "Mainly clear"],
@@ -42,7 +44,7 @@ async function geocodeCity(city) {
   url.searchParams.set("language", "en");
   url.searchParams.set("format", "json");
 
-  const response = await fetch(url);
+  const response = await fetchWithRetry(url);
   if (!response.ok) {
     throw new Error("Could not search for that city.");
   }
@@ -62,15 +64,25 @@ async function geocodeCity(city) {
 }
 
 async function reverseGeocode(latitude, longitude) {
+  const fallback = `${Number(latitude).toFixed(2)}, ${Number(longitude).toFixed(2)}`;
+
   try {
     const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
     url.searchParams.set("name", `${latitude},${longitude}`);
     url.searchParams.set("count", "1");
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    return null;
+
+    const response = await fetchWithRetry(url);
+    if (!response.ok) return fallback;
+
+    const data = await response.json();
+    const result = data.results && data.results[0];
+    if (result) {
+      return [result.name, result.admin1, result.country].filter(Boolean).join(", ");
+    }
+
+    return fallback;
   } catch {
-    return null;
+    return fallback;
   }
 }
 
@@ -81,7 +93,7 @@ async function getWeather(latitude, longitude) {
   url.searchParams.set("current", "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m");
   url.searchParams.set("timezone", "auto");
 
-  const response = await fetch(url);
+  const response = await fetchWithRetry(url);
   if (!response.ok) {
     throw new Error("Could not load current weather.");
   }

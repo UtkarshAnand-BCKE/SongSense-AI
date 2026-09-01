@@ -1,97 +1,57 @@
-const intents = require("../data/intents.json");
+// services/intentClassifier.js
 
-const tokenizer = new Intl.Segmenter("en", { granularity: "word" });
-const model = {
-  labels: new Map(),
-  vocabulary: new Set(),
-  totalDocuments: 0
+// Keyword map: intent -> trigger words/phrases a user might type
+const INTENT_KEYWORDS = {
+  happy: ["happy", "joy", "good mood", "excited", "great day", "celebrate", "cheerful"],
+  sad: ["sad", "down", "depressed", "low", "unhappy", "blue", "upset"],
+  romantic: ["romantic", "love", "crush", "date", "valentine", "my partner", "girlfriend", "boyfriend"],
+  heartbreak: ["breakup", "broken heart", "ex", "miss him", "miss her", "heartbroken", "moving on"],
+  energetic: ["energetic", "pumped", "workout", "gym", "hype", "party", "dance"],
+  calm: ["calm", "relax", "chill", "peaceful", "unwind", "rest", "quiet"],
+  nostalgic: ["nostalgic", "old memories", "throwback", "childhood", "miss the old days"],
+  motivational: ["motivate", "motivation", "inspire", "focus", "grind", "productive"],
+  rainy: ["rain", "raining", "monsoon", "drizzle"],
 };
 
-function tokenize(text) {
-  return [...tokenizer.segment(String(text).toLowerCase())]
-    .filter((part) => part.isWordLike)
-    .map((part) => part.segment)
-    .filter((word) => word.length > 1);
-}
-
-function addDocument(label, text) {
-  if (!model.labels.has(label)) {
-    model.labels.set(label, {
-      documents: 0,
-      wordCounts: new Map(),
-      totalWords: 0
-    });
+/**
+ * Classifies free-text user input into a mood/intent category.
+ * @param {string} text - Raw user input (e.g. "I'm feeling kinda low today")
+ * @returns {{ intent: string, confidence: number, matchedKeyword: string|null }}
+ */
+function classifyIntent(text) {
+  if (!text || typeof text !== "string") {
+    return { intent: "neutral", confidence: 0, matchedKeyword: null };
   }
 
-  const labelData = model.labels.get(label);
-  labelData.documents += 1;
-  model.totalDocuments += 1;
+  const lower = text.toLowerCase();
+  let bestIntent = "neutral";
+  let bestScore = 0;
+  let matchedKeyword = null;
 
-  for (const token of tokenize(text)) {
-    model.vocabulary.add(token);
-    labelData.wordCounts.set(token, (labelData.wordCounts.get(token) || 0) + 1);
-    labelData.totalWords += 1;
-  }
-}
-
-function train() {
-  for (const item of intents) {
-    for (const example of item.examples) {
-      addDocument(item.intent, example);
+  for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) {
+        // Longer keyword matches = more specific = higher confidence
+        const score = kw.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIntent = intent;
+          matchedKeyword = kw;
+        }
+      }
     }
   }
+
+  const confidence = bestScore > 0 ? Math.min(1, bestScore / 20) : 0;
+
+  return { intent: bestIntent, confidence, matchedKeyword };
 }
 
-function classifyIntent(text) {
-  const tokens = tokenize(text);
-  const vocabularySize = Math.max(model.vocabulary.size, 1);
-  const rawScores = [];
-
-  for (const [label, labelData] of model.labels.entries()) {
-    const prior = Math.log(labelData.documents / model.totalDocuments);
-    const denominator = labelData.totalWords + vocabularySize;
-    const logScore = tokens.reduce((score, token) => {
-      const count = labelData.wordCounts.get(token) || 0;
-      return score + Math.log((count + 1) / denominator);
-    }, prior);
-
-    rawScores.push({ intent: label, logScore });
-  }
-
-  const maxLogScore = Math.max(...rawScores.map((item) => item.logScore));
-  const scores = rawScores
-    .map((item) => ({
-      intent: item.intent,
-      value: Math.exp(item.logScore - maxLogScore)
-    }))
-    .sort((a, b) => b.value - a.value);
-
-  const total = scores.reduce((sum, item) => sum + item.value, 0) || 1;
-  const normalized = scores.map((item) => ({
-    intent: item.intent,
-    confidence: Number((item.value / total).toFixed(4))
-  }));
-
-  const top = normalized[0] || { intent: "unknown", confidence: 0 };
-  return {
-    intent: top.confidence < 0.2 ? "unknown" : top.intent,
-    confidence: top.confidence,
-    scores: normalized.slice(0, 5),
-    tokens
-  };
+function getSupportedIntents() {
+  return Object.keys(INTENT_KEYWORDS);
 }
-
-function getTrainingSummary() {
-  return {
-    intents: model.labels.size,
-    examples: model.totalDocuments,
-    vocabulary: model.vocabulary.size
-  };
-}
-
-train();
 
 module.exports = {
   classifyIntent,
-  getTrainingSummary
+  getSupportedIntents,
 };

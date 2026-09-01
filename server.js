@@ -11,7 +11,7 @@ const path = require("path");
 
 const { classifyIntent } = require("./services/intentClassifier");
 const { recommendSongs } = require("./services/songRecommender");
-const { getWeather, geocodeCity } = require("./services/weatherService");
+const { getWeather, geocodeCity } = require("./services/weatherservice");
 const { findTrack } = require("./services/youtubeService");
 
 const app = express();
